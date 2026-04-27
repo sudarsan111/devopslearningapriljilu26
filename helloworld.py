@@ -1,0 +1,2 @@
+string = "jilu"
+print(string)
