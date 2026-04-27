@@ -1,2 +1,3 @@
 "Hello world"
 Today date is 27-042026
+Basic devops concept
