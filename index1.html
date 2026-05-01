@@ -3,71 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Demo App</title>
+    <title>My Demo Webpage</title>
+
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(to right, #4facfe, #00f2fe);
             margin: 0;
-            padding: 0;
-            color: #333;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+        }
+
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
             text-align: center;
         }
-        header {
-            background: #222;
-            color: #fff;
-            padding: 20px;
+
+        nav {
+            background: #34495e;
+            padding: 10px;
+            text-align: center;
         }
-        section {
-            padding: 40px;
+
+        nav a {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+            font-weight: bold;
         }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            padding: 30px;
+            text-align: center;
+        }
+
         .card {
-            background: #fff;
-            margin: 20px auto;
+            background: white;
             padding: 20px;
-            width: 300px;
+            margin: 20px auto;
+            max-width: 500px;
             border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
+
         footer {
-            background: #222;
-            color: #fff;
+            background: #2c3e50;
+            color: white;
+            text-align: center;
             padding: 10px;
             position: fixed;
-            bottom: 0;
             width: 100%;
+            bottom: 0;
         }
     </style>
 </head>
+
 <body>
 
 <header>
-    <h1>🚀 Welcome to My EC2 Demo</h1>
-    <p>Deployed using AWS EC2</p>
+    <h1>Welcome to My Demo Website 🚀</h1>
+    <p>Deployed using EC2 + Git + DevOps</p>
 </header>
 
-<section>
-    <div class="card">
-        <h2>About</h2>
-        <p>This is a sample web page deployed on an EC2 instance for demo purposes.</p>
-    </div>
+<nav>
+    <a href="#">Home</a>
+    <a href="#">About</a>
+    <a href="#">Services</a>
+    <a href="#">Contact</a>
+</nav>
 
+<div class="container">
     <div class="card">
-        <h2>Features</h2>
-        <p>✔ Simple HTML & CSS<br>
-           ✔ Hosted on cloud<br>
-           ✔ Accessible via public IP</p>
+        <h2>Hello, Sudarsan 👋</h2>
+        <p>This is your demo webpage.</p>
+        <p>You can host this on AWS EC2 using Nginx or Apache.</p>
+        <button onclick="showMessage()">Click Me</button>
     </div>
-
-    <div class="card">
-        <h2>Contact</h2>
-        <p>Email: demo@example.com</p>
-    </div>
-</section>
+</div>
 
 <footer>
-    <p>© 2026 Demo Project | DevOps Practice</p>
+    <p>© 2026 My Demo Project | DevOps Practice</p>
 </footer>
+
+<script>
+    function showMessage() {
+        alert("Your website is working successfully! 🎉");
+    }
+</script>
 
 </body>
 </html>
