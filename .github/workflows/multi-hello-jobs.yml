@@ -1,0 +1,35 @@
+name: Multi Hello Jobs
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Person to greet'
+        default: 'World'
+        required: true
+        type: string
+
+jobs:
+  greet-morning:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Morning Greeting
+      run: python helloworld.py "Good Morning, ${{ inputs.name }}"
+
+  greet-afternoon:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Afternoon Greeting
+      run: python helloworld.py "Good Afternoon, ${{ inputs.name }}"
+
+  greet-evening:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Evening Greeting
+      run: python helloworld.py "Good Evening, ${{ inputs.name }}"
