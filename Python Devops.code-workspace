@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../Python Devops"
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}
