@@ -23,10 +23,10 @@ jobs:
           pip install pytest pytest-cov ruff bandit
 
       - name: Run tests
-        run: pytest --cov=. --cov-fail-under=80
+        run: pytest --cov=app --cov=config --cov-fail-under=80
 
       - name: Lint
         run: ruff check .
 
       - name: Security scan
-        run: bandit -r src/
+        run: bandit -r app.py config.py
