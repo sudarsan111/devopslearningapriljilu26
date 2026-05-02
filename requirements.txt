@@ -1,2 +1,7 @@
 flask==3.0.0
 pytest==7.4.0
+scikit-learn
+joblib
+fastapi
+uvicorn
+httpx
