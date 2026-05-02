@@ -1,0 +1,192 @@
+name: Task Manager CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "realworld-cicd/**"
+      - ".github/workflows/realworld-ci-cd.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "realworld-cicd/**"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: task-manager
+  PYTHON_VERSION: "3.11"
+
+# Pipeline shape:
+#
+#   lint ──┬──▶ test ──────┬──▶ build ──┬──▶ deploy-staging   (develop only)
+#          └──▶ security ──┘            └──▶ deploy-production (main only)
+
+jobs:
+  # ── 1. Lint ────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: realworld-cicd
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: realworld-cicd/requirements-dev.txt
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint with ruff
+        run: ruff check src/ tests/
+
+  # ── 2. Test (needs lint) ───────────────────────────────────────────────────
+  test:
+    name: Test & coverage
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: realworld-cicd
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: realworld-cicd/requirements-dev.txt
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run tests with coverage
+        run: pytest tests/ --cov=src --cov-report=xml --cov-fail-under=80 -v
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: realworld-cicd/coverage.xml
+
+  # ── 3. Security scan (needs lint, runs parallel with test) ────────────────
+  security:
+    name: Security scan
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: realworld-cicd
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install bandit
+        run: pip install bandit==1.7.6
+
+      - name: Run bandit security scan
+        run: bandit -r src/ -ll
+
+  # ── 4. Build & push Docker image (needs test AND security) ────────────────
+  build:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: realworld-cicd
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── 5. Deploy to staging (develop branch only) ────────────────────────────
+  deploy-staging:
+    name: Deploy to staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://staging.yourapp.com
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            docker pull ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:develop
+            docker stop task-manager-staging || true
+            docker rm   task-manager-staging || true
+            docker run -d \
+              --name task-manager-staging \
+              --restart unless-stopped \
+              -p 8080:5000 \
+              ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:develop
+
+  # ── 6. Deploy to production (main branch only, requires env approval) ─────
+  deploy-production:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://yourapp.com
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            docker pull ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest
+            docker stop task-manager-prod || true
+            docker rm   task-manager-prod || true
+            docker run -d \
+              --name task-manager-prod \
+              --restart unless-stopped \
+              -p 80:5000 \
+              ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest
