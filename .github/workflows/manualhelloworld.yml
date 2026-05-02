@@ -25,8 +25,11 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Runs a single command using the runners shell
-    - name: Send greeting
-      run: echo "Hello ${{ inputs.name }}"
+    # 1. Download the repository code to the runner
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. Run the python script with the workflow input as an argument
+    - name: Run Python Script
+      run: python helloworld.py "${{ inputs.name }}"
